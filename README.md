@@ -12,7 +12,6 @@ AFASIA DE WENICKE
 ```
 npm install node-osc 
 npm i --save @open-wa/wa-automate@latest
-
 ```
 
 # Correr
