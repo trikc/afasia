@@ -1,0 +1,4 @@
+_IGNORE_AFASIA_DE_WERNICKE 
+AFASIA_DE_WERNICKE.data.json
+*.swp
+.node-persist/
