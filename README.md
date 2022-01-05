@@ -1,5 +1,9 @@
 AFASIA DE WENICKE
 ==================
+# Lemma
+
+> Joker: If you're good at something, do it for nothing.
+- Karen.
 
 # Instalar
 > node y npm últimos (usá nvm)
