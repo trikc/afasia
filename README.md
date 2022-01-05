@@ -32,7 +32,10 @@ o = OSCFunc({ arg msg, time, addr, recvPort; [msg, time, addr, recvPort].postln;
 n.sendMsg("/ctrl", "speed", 0.1);
 
 ```
-
+[Docu tidal](http://tidalcycles.org/docs/getting-started/tidal_start/)
+[tidal OSC ](https://tidalcycles.org/docs/configuration/MIDIOSC/osc/#controller-input)
+[Supercollider OSC](https://doc.sccode.org/Guides/OSC_communication.html)
+[grabar supercollider](http://depts.washington.edu/dxscdoc/Help/Classes/Recorder.html)
 
 ![fonador](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Respiratory_system_complete_no_labels.svg/568px-Respiratory_system_complete_no_labels.svg.png)
 
