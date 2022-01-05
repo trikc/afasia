@@ -1,12 +1,10 @@
 const wa = require('@open-wa/wa-automate');
-const { Client, Bundle } = require('node-osc');
+const { Client, Message } = require('node-osc');
 
 const fs = require('fs');
 const util = require('util');
 
-
-
-const oscClient = new Client('127.0.0.1', 3333);
+const oscClient = new Client('127.0.0.1',6010);
 // Import other required libraries
 // Creates a client
 var gtts = require('node-gtts')('es');
@@ -25,23 +23,25 @@ wa.create({
   useChrome:true,
   qrTimeout: 0, //0 means it will wait forever for you to scan the qr code
 }).then(client => start(client));
+
 let i=0
-console.log(__dirname)
+
 function fonar(text, i) {
     var filepath = path.join(__dirname, 'out_'+i.toString()+'.wav');
     gtts.save(filepath, text, function() {
       console.log('save done ',i);
     })
 }
+
 function start(client) {
   client.onMessage(async message => {
     let toSend = '/'+message.body;
     fonar(message.body, i);
     i = i+1;
-    const bundle = new Bundle([toSend, 1]);
-    console.log("...sending:")
-    console.log(bundle);
-    oscClient.send(bundle);
+    const msg = new Message('/ctrl', "speed", 0.5);
+
+    console.log("...sending: ", msg)
+    oscClient.send(msg);
     if (message.body === 'Hi') {
       await client.sendText(message.from, '👋 Hello!');
     }
