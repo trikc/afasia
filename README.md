@@ -18,4 +18,4 @@ node index.js
 node example_server.js
 ```
 
-![fonador](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Respiratory_system_complete_no_labels.svg/800px-Respiratory_system_complete_no_labels.svg.pnghttps://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Respiratory_system_complete_no_labels.svg/800px-Respiratory_system_complete_no_labels.svg.png)
+![fonador](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Respiratory_system_complete_no_labels.svg/568px-Respiratory_system_complete_no_labels.svg.png)
