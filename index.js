@@ -4,7 +4,9 @@ const { Client, Message } = require('node-osc');
 const fs = require('fs');
 const util = require('util');
 
-const oscClient = new Client('127.0.0.1',6010);
+const tidal = new Client('127.0.0.1',6010);
+const supercollider = new Client('127.0.0.1',57120);
+
 // Import other required libraries
 // Creates a client
 var gtts = require('node-gtts')('es');
@@ -25,26 +27,35 @@ wa.create({
 }).then(client => start(client));
 
 let i=0
-
-function fonar(text, i) {
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function fonar(text, i, client, destination) {
     var filepath = path.join(__dirname, 'out_'+i.toString()+'.wav');
     gtts.save(filepath, text, function() {
       console.log('save done ',i);
     })
+    await delay(4000);
+    await client.sendAudio(destination, filepath)
 }
 
 function start(client) {
   client.onMessage(async message => {
+    await client.sendText(message.from, '🗣️');
+    console.log(message.body);
     let toSend = '/'+message.body;
-    fonar(message.body, i);
-    i = i+1;
-    const msg = new Message('/ctrl', "speed", 0.5);
-
-    console.log("...sending: ", msg)
-    oscClient.send(msg);
-    if (message.body === 'Hi') {
-      await client.sendText(message.from, '👋 Hello!');
+    try {
+    await fonar(message.body, i, client, message.from);
+    const tidalMsg = new Message('/ctrl', "speed", 0.5);
+    const recordMsg = new Message('/record'); 
+    supercollider.send(recordMsg);
+    tidal.send(tidalMsg);
+    if (message.body === 'jajaja') {
+      await client.sendText(message.from, 'no es gracioso');
     }
+    var filepath = path.join(__dirname, 'out_'+i.toString()+'.wav');
+    console.log(filepath)
+    await client.sendText(message.from, '🗣️');
+    i = i+1;
+    } catch (e) { await client.sendText(message.from, 'gracias. casi hacés caer al server')}
   });
 }
 
