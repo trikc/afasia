@@ -25,6 +25,10 @@ node example_server.js
 [Documentacion parte audio node](https://github.com/mohayonao/web-audio-engine)
 [con su correspondiente cli](https://github.com/mohayonao/wae-cli)
 
+Dentro del wae cli podemos usar la Web Audio API tranquilamente:
+[tuto web audio api muchas cosas](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API)
+[tuto web audio api evanzado](https://medium.com/creative-technology-concepts-code/recording-syncing-and-exporting-web-audio-1e1a1e35ef08)
+
 
 ## Configuración supercollider
 

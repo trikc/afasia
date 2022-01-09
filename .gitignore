@@ -3,3 +3,5 @@ AFASIA_DE_WERNICKE.data.json
 *.swp
 .node-persist/
 *.wav
+*.mp3
+*.py
