@@ -16,6 +16,8 @@ console.log(audioBuffer instanceof ArrayBuffer)
 console.log("HOLAAAAA")
 console.log(`Hello ${process.argv[6]}`);
 const tempBuffer = new Uint8Array(audioBuffer).buffer;
+//opcion 2
+//const tempBuffer = toArrayBuffer(audioBuffer)
 console.log(tempBuffer instanceof ArrayBuffer)
 const buffer = audioContext.decodeAudioData(tempBuffer);
 
