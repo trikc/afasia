@@ -12,6 +12,7 @@ AFASIA DE WENICKE
 ```
 npm install node-osc 
 npm i --save @open-wa/wa-automate@latest
+npm install wae-cli
 ```
 
 # Correr
@@ -20,6 +21,11 @@ node index.js
 
 node example_server.js
 ```
+
+[Documentacion parte audio node](https://github.com/mohayonao/web-audio-engine)
+[con su correspondiente cli](https://github.com/mohayonao/wae-cli)
+
+
 ## Configuración supercollider
 
 ```
@@ -39,3 +45,5 @@ n.sendMsg("/ctrl", "speed", 0.1);
 
 ![fonador](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Respiratory_system_complete_no_labels.svg/568px-Respiratory_system_complete_no_labels.svg.png)
 
+
+npx wae test -o test.wav
