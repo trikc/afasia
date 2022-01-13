@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@open-wa/wa-automate": "^4.28.13",
+    "esbuild": "^0.14.11",
+    "web-audio-engine": "^0.13.4",
+    "web-audio-oscillators": "^1.0.4"
+  }
+}

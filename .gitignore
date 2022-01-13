@@ -5,3 +5,10 @@ AFASIA_DE_WERNICKE.data.json
 *.wav
 *.mp3
 *.py
+node_modules/
+
+# managed by open-wa
+**.data.json
+**.node-persist**
+**_IGNORE_**
+# end managed by open-wa
