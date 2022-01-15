@@ -70,35 +70,37 @@ function start(client) {
   });
 }
 
-async function initWAE() {
-  const context = new RenderingAudioContext();
+async function loadSample(s, audioCtx) {
+  const sample = fs.readFileSync(s);
 
-  const osc = context.createOscillator();
-  const amp = context.createGain();
+  const audioBuffer = await audioCtx.decodeAudioData(sample.buffer);
+  const bufSrc = audioCtx.createBufferSource();
 
-  osc.type = "square";
-  osc.frequency.setValueAtTime(987.7666, 0);
-  osc.frequency.setValueAtTime(1318.5102, 0.075);
-  osc.start(0);
-  osc.stop(2);
-  osc.connect(amp);
-  // osc.onended = () => {
-  //   context.close().then(() => {
-  //     process.exit(0);
-  //   });
-  // };
+  bufSrc.buffer = audioBuffer;
+  bufSrc.loop = false;
 
-  amp.gain.setValueAtTime(0.25, 0);
-  amp.gain.setValueAtTime(0.25, 0.075);
-  amp.gain.linearRampToValueAtTime(0, 2);
-  amp.connect(context.destination);
+  return bufSrc;
+}
 
-  context.processTo("00:00:10.000");
+async function saveToFile(filename, audioCtx) {
+  const audioData = audioCtx.exportAsAudioData();
 
-  const audioData = context.exportAsAudioData();
-  await context.encodeAudioData(audioData).then((arrayBuffer) => {
-    fs.writeFileSync("out.wav", new Buffer.from(arrayBuffer));
+  await audioCtx.encodeAudioData(audioData).then((arrayBuffer) => {
+    fs.writeFileSync(filename, new Buffer.from(arrayBuffer));
   });
+}
+
+async function initWAE() {
+  const audioCtx = new RenderingAudioContext();
+
+  const kick = await loadSample("samples/kick.wav", audioCtx);
+
+  kick.start(audioCtx.currentTime);
+  kick.connect(audioCtx.destination);
+
+  audioCtx.processTo("00:00:10.000");
+
+  await saveToFile("out.wav", audioCtx);
 }
 
 function main() {
