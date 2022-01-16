@@ -1,10 +1,44 @@
 const { RenderingAudioContext } = require("web-audio-engine");
 
 const wa = require("@open-wa/wa-automate");
-const fs = require("fs");
+const fs = require("fs").promises;
 const util = require("util");
 const gtts = require("node-gtts")("es");
 const path = require("path");
+
+const SAMPLE_LIBRARY = {
+  piano: [
+    { note: "C", octave: 1, file: "samples/piano/C1_mf.wav" },
+    { note: "C", octave: 2, file: "samples/piano/C2_mf.wav" },
+    { note: "C", octave: 3, file: "samples/piano/C3_mf.wav" },
+    { note: "C", octave: 4, file: "samples/piano/C4_mf.wav" },
+    { note: "C", octave: 5, file: "samples/piano/C5_mf.wav" },
+    { note: "C", octave: 6, file: "samples/piano/C6_mf.wav" },
+    { note: "C", octave: 7, file: "samples/piano/C7_mf.wav" },
+    { note: "G", octave: 1, file: "samples/piano/G1_mf.wav" },
+    { note: "G", octave: 2, file: "samples/piano/G2_mf.wav" },
+    { note: "G", octave: 3, file: "samples/piano/G3_mf.wav" },
+    { note: "G", octave: 4, file: "samples/piano/G4_mf.wav" },
+    { note: "G", octave: 5, file: "samples/piano/G5_mf.wav" },
+    { note: "G", octave: 6, file: "samples/piano/G6_mf.wav" },
+    { note: "G", octave: 7, file: "samples/piano/G7_mf.wav" },
+  ],
+};
+
+const OCTAVE = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -70,40 +104,102 @@ function start(client) {
   });
 }
 
-async function loadSample(s, audioCtx) {
-  const sample = fs.readFileSync(s);
+async function loadSample(audioCtx, s) {
+  return fs.readFile(s).then((data) => audioCtx.decodeAudioData(data.buffer));
+}
 
-  const audioBuffer = await audioCtx.decodeAudioData(sample.buffer);
-  const bufSrc = audioCtx.createBufferSource();
+function noteValue(note, octave) {
+  return octave * 12 + OCTAVE.indexOf(note);
+}
 
-  bufSrc.buffer = audioBuffer;
-  bufSrc.loop = false;
+function getNoteDistance(note1, octave1, note2, octave2) {
+  return noteValue(note1, octave1) - noteValue(note2, octave2);
+}
 
-  return bufSrc;
+function getNearestSample(sampleBank, note, octave) {
+  let sortedBank = sampleBank.slice().sort((sampleA, sampleB) => {
+    let distanceToA = Math.abs(
+      getNoteDistance(note, octave, sampleA.note, sampleA.octave)
+    );
+    let distanceToB = Math.abs(
+      getNoteDistance(note, octave, sampleB.note, sampleB.octave)
+    );
+    return distanceToA - distanceToB;
+  });
+  return sortedBank[0];
+}
+
+function flatToSharp(note) {
+  switch (note) {
+    case "Bb":
+      return "A#";
+    case "Db":
+      return "C#";
+    case "Eb":
+      return "D#";
+    case "Gb":
+      return "F#";
+    case "Ab":
+      return "G#";
+    default:
+      return note;
+  }
+}
+
+const noteRegex = /^(\w[b\#]?)(\d)$/;
+
+async function getSample(audioCtx, instrument, noteAndOctave) {
+  let [, requestedNote, requestedOctave] = noteRegex.exec(noteAndOctave);
+  requestedOctave = parseInt(requestedOctave, 10);
+  requestedNote = flatToSharp(requestedNote);
+  let sampleBank = SAMPLE_LIBRARY[instrument];
+  let sample = getNearestSample(sampleBank, requestedNote, requestedOctave);
+  let distance = getNoteDistance(
+    requestedNote,
+    requestedOctave,
+    sample.note,
+    sample.octave
+  );
+
+  return loadSample(audioCtx, sample.file).then((audioBuffer) => ({
+    audioBuffer,
+    distance,
+  }));
+}
+
+async function playSample(audioCtx, instrument, note, delay) {
+  await getSample(audioCtx, instrument, note).then(
+    ({ audioBuffer, distance }) => {
+      let playbackRate = Math.pow(2, distance / 12);
+      let bufferSource = audioCtx.createBufferSource();
+      bufferSource.buffer = audioBuffer;
+      bufferSource.playbackRate.value = playbackRate;
+      bufferSource.connect(audioCtx.destination);
+      bufferSource.start(audioCtx.currentTime + delay);
+    }
+  );
 }
 
 async function saveToFile(filename, audioCtx) {
   const audioData = audioCtx.exportAsAudioData();
 
-  await audioCtx.encodeAudioData(audioData).then((arrayBuffer) => {
-    fs.writeFileSync(filename, new Buffer.from(arrayBuffer));
+  await audioCtx.encodeAudioData(audioData).then(async (arrayBuffer) => {
+    await fs.writeFile(filename, new Buffer.from(arrayBuffer));
   });
 }
 
 async function initWAE() {
   const audioCtx = new RenderingAudioContext();
 
-  const kick = await loadSample("samples/kick.wav", audioCtx);
-
-  kick.start(audioCtx.currentTime);
-  kick.connect(audioCtx.destination);
+  await playSample(audioCtx, "piano", "C4", 0);
+  await playSample(audioCtx, "piano", "C5", 2);
 
   audioCtx.processTo("00:00:10.000");
 
   await saveToFile("out.wav", audioCtx);
 }
 
-function main() {
+async function main() {
   /*
   wa.create({
     sessionId: "AFASIA_DE_WERNICKE",
@@ -120,7 +216,7 @@ function main() {
   }).then((client) => start(client));
   */
 
-  initWAE();
+  await initWAE();
 }
 
 main();
