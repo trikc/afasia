@@ -82,22 +82,27 @@ async function fonarInst(text, i, client, destination) {
   await client.sendAudio(destination, filepath);
 }
 
-function start(client) {
+async function start(client) {
   let i = 0;
   client.onMessage(async (message) => {
+    await initWAE();
+
+    let toMP3 = "ffmpeg -i " + "out" + ".wav " + "out" + ".mp3";
+    await exec(toMP3);
+
     i += 1;
     //await client.sendText(message.from, '🗣️');
     console.log(message.body);
     let toSend = "/" + message.body;
     try {
-      await fonarInst(message.body, i, client, message.from);
+      // await fonarInst(message.body, i, client, message.from);
       //await fonar(message.body, i, client, message.from);
-      if (message.body === "jajaja") {
-        await client.sendText(message.from, "no es gracioso");
-      }
-      var filepath = path.join(__dirname, "sines_" + i.toString() + ".wav");
-      console.log(filepath);
+      // if (message.body === "jajaja") {
+      //   await client.sendText(message.from, "no es gracioso");
+      // }
+      var filepath = path.join(__dirname, "out.mp3");
       await client.sendText(message.from, "🗣️");
+      await client.sendAudio(message.from, filepath);
     } catch (e) {
       await client.sendText(message.from, "gracias. casi hacés caer al server");
     }
@@ -192,7 +197,11 @@ async function initWAE() {
   const audioCtx = new RenderingAudioContext();
 
   await playSample(audioCtx, "piano", "C4", 0);
-  await playSample(audioCtx, "piano", "C5", 2);
+  await playSample(audioCtx, "piano", "D4", 1.5);
+  await playSample(audioCtx, "piano", "C4", 2);
+  await playSample(audioCtx, "piano", "E4", 3);
+  await playSample(audioCtx, "piano", "C4", 4);
+  await playSample(audioCtx, "piano", "C4", 4.5);
 
   audioCtx.processTo("00:00:10.000");
 
@@ -200,7 +209,6 @@ async function initWAE() {
 }
 
 async function main() {
-  /*
   wa.create({
     sessionId: "AFASIA_DE_WERNICKE",
     multiDevice: true, // required to enable multiDevice support
@@ -214,9 +222,6 @@ async function main() {
     useChrome: true,
     qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
   }).then((client) => start(client));
-  */
-
-  await initWAE();
 }
 
 main();
