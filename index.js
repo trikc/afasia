@@ -44,16 +44,16 @@ async function callWAE(param, i) {
   let executeWAE='npx wae sines -o '+fileName+'.wav -V '+param
   let toMP3='ffmpeg -i '+fileName+'.wav '+fileName+'.mp3'
   try {
-      console.log("por ej el primer")
+      console.log(">creando audio")
       await exec(executeWAE);
       await delay(500)
-      console.log("por ej ffmpeg")
       await exec(toMP3)
-      console.log("termine ffmpeg")
+      console.log(">audio terminado")
       //console.log('por sacar del fs el wav')
       //await exec('rm '+fileName+'.wav')
   }catch (err){
-     console.error(err);
+      
+     //console.error(err);
   };
 };
 
@@ -63,9 +63,9 @@ async function fonarInst(text, i, client,destination){
     const param = text.length/3;
 
     await callWAE(param.toString(), i.toString());
-    console.log("finished fonar waiting")
+    console.log("finished fonar: waiting")
     await delay(1000);
-    console.log("finished fonar ressuming to send")
+    console.log("finished fonar: ressuming to send")
     await client.sendAudio(destination, filepath);
 
 }
@@ -73,16 +73,11 @@ function start(client) {
   client.onMessage(async message => {
     i = i+1;
     //await client.sendText(message.from, '🗣️');
-    console.log(message.body);
+    console.log("[🗣️ ]: ",message.body);
     let toSend = '/'+message.body;
     try {
-        await fonarInst(message.body, i, client, message.from);
-        //await fonar(message.body, i, client, message.from);
-        //const tidalMsg = new Message('/ctrl', "speed", message.body.length);
-        //const recordMsg = new Message('/record_start'); 
-        //supercollider.send(recordMsg);
-        //console.log("mandè mensaje de grabado")
-        //tidal.send(tidalMsg);
+        //await fonarInst(message.body, i, client, message.from);
+        await fonar(message.body, i, client, message.from);
         if (message.body === 'jajaja') {
           await client.sendText(message.from, 'no es gracioso');
         }
