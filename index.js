@@ -185,6 +185,77 @@ async function playSample(audioCtx, instrument, note, delay) {
   );
 }
 
+async function playVoice(audioCtx, filename, delay, effects) {
+  const audioBuffer = await loadSample(audioCtx, filename);
+  let bufferSource = audioCtx.createBufferSource();
+  bufferSource.buffer = audioBuffer;
+
+  const initialNode = bufferSource;
+  const finalNode = audioCtx.destination;
+  let currentNode = initialNode;
+
+  for (const effect of effects) {
+    currentNode.connect(effect);
+    console.log("connected", currentNode, "to", effect);
+    currentNode = effect;
+  }
+
+  console.log("connected", currentNode, "to", finalNode);
+  currentNode.connect(finalNode);
+
+  bufferSource.start(audioCtx.currentTime + delay);
+}
+
+function effectDistort(audioCtx, amount) {
+  const waveShaper = audioCtx.createWaveShaper();
+
+  const k = typeof amount === "number" ? amount : 50;
+  const nSamples = 44100;
+  const curve = new Float32Array(nSamples);
+  const deg = Math.PI / 180;
+  let x = 0;
+
+  for (let i = 0; i < nSamples; ++i) {
+    x = (i * 2) / nSamples - 1;
+    curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+  }
+
+  waveShaper.curve = curve;
+  waveShaper.oversample = "4x";
+
+  return waveShaper;
+}
+
+function effectLPF(audioCtx) {
+  const iirFilter = audioCtx.createIIRFilter(
+    [0.0012681742, 0.0025363483, 0.0012681742],
+    [1.0317185917, -1.9949273033, 0.9682814083]
+  );
+
+  return iirFilter;
+}
+
+function effectCompressor(audioCtx) {
+  const compressor = audioCtx.createDynamicsCompressor();
+
+  compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+  compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+  compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+  compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+  compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+  return compressor;
+}
+
+function effectBiquad(audioCtx) {
+  const biquadFilter = audioCtx.createBiquadFilter();
+  biquadFilter.type = "lowshelf";
+  biquadFilter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+  biquadFilter.gain.setValueAtTime(25, audioCtx.currentTime);
+
+  return biquadFilter;
+}
+
 async function saveToFile(filename, audioCtx) {
   const audioData = audioCtx.exportAsAudioData();
 
@@ -196,12 +267,13 @@ async function saveToFile(filename, audioCtx) {
 async function initWAE() {
   const audioCtx = new RenderingAudioContext();
 
-  await playSample(audioCtx, "piano", "C4", 0);
-  await playSample(audioCtx, "piano", "D4", 1.5);
-  await playSample(audioCtx, "piano", "C4", 2);
-  await playSample(audioCtx, "piano", "E4", 3);
-  await playSample(audioCtx, "piano", "C4", 4);
-  await playSample(audioCtx, "piano", "C4", 4.5);
+  // Effects
+  const distort = effectDistort(audioCtx, 9000);
+  const lpf = effectLPF(audioCtx);
+  const compressor = effectCompressor(audioCtx);
+  const biquad = effectBiquad(audioCtx);
+
+  await playVoice(audioCtx, "samples/gtts/de_que_organos.wav", 0, [biquad]);
 
   audioCtx.processTo("00:00:10.000");
 
@@ -209,19 +281,21 @@ async function initWAE() {
 }
 
 async function main() {
-  wa.create({
-    sessionId: "AFASIA_DE_WERNICKE",
-    multiDevice: true, // required to enable multiDevice support
-    authTimeout: 60, // wait only 60 seconds to get a connection with the host account device
-    blockCrashLogs: true,
-    disableSpins: true,
-    headless: true,
-    hostNotificationLang: "ES_AR",
-    logConsole: true,
-    popup: true,
-    useChrome: true,
-    qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
-  }).then((client) => start(client));
+  // wa.create({
+  //   sessionId: "AFASIA_DE_WERNICKE",
+  //   multiDevice: true, // required to enable multiDevice support
+  //   authTimeout: 60, // wait only 60 seconds to get a connection with the host account device
+  //   blockCrashLogs: true,
+  //   disableSpins: true,
+  //   headless: true,
+  //   hostNotificationLang: "ES_AR",
+  //   logConsole: true,
+  //   popup: true,
+  //   useChrome: true,
+  //   qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
+  // }).then((client) => start(client));
+
+  await initWAE();
 }
 
 main();
