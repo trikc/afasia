@@ -256,6 +256,35 @@ function effectBiquad(audioCtx) {
   return biquadFilter;
 }
 
+function partialShuffle(values, count) {
+  for (let i = 0; i < count; i++) {
+    const j = Math.floor(Math.random() * (values.length - i)) + i;
+    [values[i], values[j]] = [values[j], values[i]];
+  }
+}
+
+function effectWaveloss(audioCtx, n) {
+  const scriptNode = audioCtx.createScriptProcessor(4096, 2, 2);
+
+  scriptNode.onaudioprocess = (audioProcessingEvent) => {
+    let inBuf = audioProcessingEvent.inputBuffer;
+    let outBuf = audioProcessingEvent.outputBuffer;
+
+    for (let chan = 0; chan < outBuf.numberOfChannels; chan++) {
+      let inData = inBuf.getChannelData(chan);
+      let outData = outBuf.getChannelData(chan);
+
+      partialShuffle(inData, n);
+
+      for (let sample = 0; sample < inBuf.length; sample++) {
+        outData[sample] = inData[sample];
+      }
+    }
+  };
+
+  return scriptNode;
+}
+
 async function saveToFile(filename, audioCtx) {
   const audioData = audioCtx.exportAsAudioData();
 
@@ -272,8 +301,12 @@ async function initWAE() {
   const lpf = effectLPF(audioCtx);
   const compressor = effectCompressor(audioCtx);
   const biquad = effectBiquad(audioCtx);
+  const waveloss = effectWaveloss(audioCtx, 400);
 
-  await playVoice(audioCtx, "samples/gtts/de_que_organos.wav", 0, [biquad]);
+  await playVoice(audioCtx, "samples/gtts/de_que_organos.wav", 0, [
+    waveloss,
+    lpf,
+  ]);
 
   audioCtx.processTo("00:00:10.000");
 
