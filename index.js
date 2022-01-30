@@ -285,6 +285,51 @@ function effectWaveloss(audioCtx, n) {
   return scriptNode;
 }
 
+function shuffle(array) {
+  for (var i = array.length - 1; i > 0; i--) {
+    var rand = Math.floor(Math.random() * (i + 1));
+    [array[i], array[rand]] = [array[rand], array[i]];
+  }
+}
+
+// split the buffer into n chunks, and randomize them
+function effectGlitch(audioCtx, n) {
+  const scriptNode = audioCtx.createScriptProcessor(4096, 2, 2);
+
+  scriptNode.onaudioprocess = (audioProcessingEvent) => {
+    let inBuf = audioProcessingEvent.inputBuffer;
+    let outBuf = audioProcessingEvent.outputBuffer;
+
+    for (let chan = 0; chan < outBuf.numberOfChannels; chan++) {
+      let inData = inBuf.getChannelData(chan);
+      let outData = outBuf.getChannelData(chan);
+
+      const chunkSize = inBuf.length / n;
+      let chunks = [];
+
+      for (let i = 0; i < inBuf.length; i += chunkSize) {
+        const chunk = inData.slice(i, i + chunkSize);
+        chunks.push(chunk);
+      }
+
+      shuffle(chunks);
+
+      // types arrays don't support concat
+      let newInData = new Float32Array(inBuf.length);
+      for (let i = 0, offset = 0; i < n; i++) {
+        newInData.set(chunks[i], offset);
+        offset += chunkSize;
+      }
+
+      for (let sample = 0; sample < inBuf.length; sample++) {
+        outData[sample] = newInData[sample];
+      }
+    }
+  };
+
+  return scriptNode;
+}
+
 async function saveToFile(filename, audioCtx) {
   const audioData = audioCtx.exportAsAudioData();
 
@@ -302,11 +347,9 @@ async function initWAE() {
   const compressor = effectCompressor(audioCtx);
   const biquad = effectBiquad(audioCtx);
   const waveloss = effectWaveloss(audioCtx, 400);
+  const glitch = effectGlitch(audioCtx, 8);
 
-  await playVoice(audioCtx, "samples/gtts/de_que_organos.wav", 0, [
-    waveloss,
-    lpf,
-  ]);
+  await playVoice(audioCtx, "samples/gtts/de_que_organos.wav", 0, [glitch]);
 
   audioCtx.processTo("00:00:10.000");
 
