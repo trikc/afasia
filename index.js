@@ -7,6 +7,9 @@ const gtts = require("node-gtts")("es");
 const path = require("path");
 const exec = util.promisify(require("child_process").exec);
 
+const { Container } = require('@nlpjs/core');
+const { SentimentAnalyzer } = require('@nlpjs/sentiment');
+const { LangEs } = require('@nlpjs/lang-es');
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const toMP3 = (filepathWAV,filepathMP3) => "ffmpeg -i " + filepathWAV + " " + filepathMP3;
@@ -36,8 +39,11 @@ async function start(client) {
     i += 1;
     //await client.sendText(message.from, '🗣️');
     console.log(message.body);
-    //try {
+    try {
       const rawFilepath = await fonar(message.body, i, client, message.from);
+      const params = await analizeText(message.body);
+      console.log(params);
+      console.log(">>>>>>>>>>>>>>>>>>");
       const resultFilepath = await applyAudioEffects(rawFilepath, i);
       console.log("Despues de apply audioeffects. nos dio el filepath ", resultFilepath);
       // if (message.body === "jajaja") {
@@ -50,15 +56,29 @@ async function start(client) {
       await delay(4000);
       await client.sendText(message.from, "🗣️");
       await client.sendAudio(message.from, finalAudioPath);
-    //} catch (e) {
-    //  console.log(e);
-    //  await client.sendText(message.from, "gracias. casi hacés caer al server");
-    //}
+    } catch (e) {
+      console.log(e);
+      await client.sendText(message.from, "gracias. casi hacés caer al server");
+    }
   });
 }
 
 async function loadSample(audioCtx, s) {
   return fs.readFile(s).then((data) => audioCtx.decodeAudioData(data.buffer));
+}
+
+async function analizeText(text){
+    let length = text.length;
+    const container = new Container();
+    container.use(LangEs);
+    console.log("container use", container);
+    const sentiment = new SentimentAnalyzer({ container });
+    console.log("despues de sentiment " ,sentiment);
+    const result = await sentiment.process({ locale: 'es', text: text });
+    console.log("result ",result);
+    let res = {"length":length, "sentiment":result.sentiment.score, "total_words":result.sentiment.numWords, "sent_words":result.sentiment.numHits, "sent_average":result.sentiment.average};
+    console.log(res)
+    return res;
 }
 
 
