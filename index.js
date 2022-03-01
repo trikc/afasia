@@ -44,7 +44,7 @@ async function start(client) {
       const params = await analizeText(message.body);
       console.log(params);
       console.log(">>>>>>>>>>>>>>>>>>");
-      const resultFilepath = await applyAudioEffects(rawFilepath, i);
+      const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
       console.log(
         "Despues de apply audioeffects. nos dio el filepath ",
         resultFilepath
@@ -244,7 +244,7 @@ async function saveToFile(filename, audioCtx) {
   });
 }
 
-async function applyAudioEffects(raw_filepath, i) {
+async function applyAudioEffects(raw_filepath, i, params) {
   const audioCtx = new RenderingAudioContext();
   console.log("aca en apply audio effects");
   // Effects
@@ -255,7 +255,38 @@ async function applyAudioEffects(raw_filepath, i) {
   const waveloss = effectWaveloss(audioCtx, 400);
   const glitch = effectGlitch(audioCtx, 8);
 
-  await playVoice(audioCtx, raw_filepath, 0, [glitch]);
+  const effects = [];
+  const { sentiment } = params;
+
+  if (sentiment <= -0.75) {
+      effects.push(glitch);
+  }
+
+  if (sentiment <= -0.5) {
+      effects.push(distort);
+  }
+
+  if (sentiment < 0) {
+      effects.push(waveloss);
+  }
+
+  if (sentiment === 0) {
+      effects.push(lpf);
+  }
+
+  if (sentiment > 0) {
+      effects.push(compressor);
+  }
+
+  if (sentiment >= 0.5) {
+      effects.push(biquad);
+  }
+
+  if (sentiment >= 0.75) {
+      effects.push(lpf);
+  }
+
+  await playVoice(audioCtx, raw_filepath, 0, effects);
   console.log("despues de playvoice");
 
   audioCtx.processTo("00:00:10.000");
