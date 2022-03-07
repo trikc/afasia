@@ -13,6 +13,8 @@ AFASIA DE WENICKE
 npm install node-osc 
 npm i --save @open-wa/wa-automate@latest
 npm install wae-cli
+npm install @nlpjs/lang-es @nlpjs/sentiment @nlpjs/core
+
 ```
 
 # Correr
