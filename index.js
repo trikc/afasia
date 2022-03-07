@@ -7,23 +7,26 @@ const gtts = require("node-gtts")("es");
 const path = require("path");
 const exec = util.promisify(require("child_process").exec);
 
-const { Container } = require('@nlpjs/core');
-const { SentimentAnalyzer } = require('@nlpjs/sentiment');
-const { LangEs } = require('@nlpjs/lang-es');
+const { Container } = require("@nlpjs/core");
+const { SentimentAnalyzer } = require("@nlpjs/sentiment");
+const { LangEs } = require("@nlpjs/lang-es");
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const toMP3 = (filepathWAV,filepathMP3) => "ffmpeg -i " + filepathWAV + " " + filepathMP3;
-const toWAV = (filepathMP3, filepathWAV) => "ffmpeg -i " + filepathMP3 + " " + filepathWAV;
-
+const toMP3 = (filepathWAV, filepathMP3) =>
+  "ffmpeg -i " + filepathWAV + " " + filepathMP3;
+const toWAV = (filepathMP3, filepathWAV) =>
+  "ffmpeg -i " + filepathMP3 + " " + filepathWAV;
 
 async function fonar(text, i, client, destination) {
   var filepathMP3 = path.join(__dirname, "raw_" + i.toString() + ".mp3");
   var filepathWAV = path.join(__dirname, "raw_" + i.toString() + ".wav");
+
   gtts.save(filepathMP3, text, function () {
     console.log("save done ", i);
   });
+
   //ffmpeg(filepathMP3).toFormat('wav').on('error', (err) => {console.log('An error occurred: ' + err.message);}).save(filepathWAV);
-  await delay(4000);
+  await delay(2000);
   await exec(toWAV(filepathMP3,filepathWAV));
   console.log("pasado a wav");
   //await fs.unlink(filepathMP3);
@@ -31,28 +34,28 @@ async function fonar(text, i, client, destination) {
   return filepathWAV;
 }
 
-
 async function start(client) {
   let i = 0;
   client.onMessage(async (message) => {
-
     i += 1;
-    //await client.sendText(message.from, '🗣️');
     console.log(message.body);
     try {
       const rawFilepath = await fonar(message.body, i, client, message.from);
       const params = await analizeText(message.body);
       console.log(params);
       console.log(">>>>>>>>>>>>>>>>>>");
-      const resultFilepath = await applyAudioEffects(rawFilepath, i);
-      console.log("Despues de apply audioeffects. nos dio el filepath ", resultFilepath);
-      // if (message.body === "jajaja") {
-      //   await client.sendText(message.from, "no es gracioso");
-      // }
+      const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
+      console.log(
+        "Despues de apply audioeffects. nos dio el filepath ",
+        resultFilepath
+      );
       var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
       //ffmpeg(resultFilepath).toFormat('mp3').save(finalAudioPath);
       await exec(toMP3(resultFilepath, finalAudioPath));
-      console.log("despues de llamar a ffmpeg con el filepath ", resultFilepath);
+      console.log(
+        "despues de llamar a ffmpeg con el filepath ",
+        resultFilepath
+      );
       await delay(4000);
       await client.sendText(message.from, "🗣️");
       await client.sendAudio(message.from, finalAudioPath);
@@ -67,23 +70,28 @@ async function loadSample(audioCtx, s) {
   return fs.readFile(s).then((data) => audioCtx.decodeAudioData(data.buffer));
 }
 
-async function analizeText(text){
-    let length = text.length;
-    const container = new Container();
-    container.use(LangEs);
-    console.log("container use", container);
-    const sentiment = new SentimentAnalyzer({ container });
-    console.log("despues de sentiment " ,sentiment);
-    const result = await sentiment.process({ locale: 'es', text: text });
-    console.log("result ",result);
-    let res = {"length":length, "sentiment":result.sentiment.score, "total_words":result.sentiment.numWords, "sent_words":result.sentiment.numHits, "sent_average":result.sentiment.average};
-    console.log(res)
-    return res;
+async function analizeText(text) {
+  let length = text.length;
+  const container = new Container();
+  container.use(LangEs);
+  console.log("container use", container);
+  const sentiment = new SentimentAnalyzer({ container });
+  console.log("despues de sentiment ", sentiment);
+  const result = await sentiment.process({ locale: "es", text: text });
+  console.log("result ", result);
+  let res = {
+    length: length,
+    sentiment: result.sentiment.score,
+    total_words: result.sentiment.numWords,
+    sent_words: result.sentiment.numHits,
+    sent_average: result.sentiment.average,
+  };
+  console.log(res);
+  return res;
 }
 
-
 async function playVoice(audioCtx, filename, delay, effects) {
-  console.log("dentro de playvoice. se le dio el filename ,",filename);
+  console.log("dentro de playvoice. se le dio el filename ,", filename);
   const audioBuffer = await loadSample(audioCtx, filename);
   let bufferSource = audioCtx.createBufferSource();
   bufferSource.buffer = audioBuffer;
@@ -236,7 +244,7 @@ async function saveToFile(filename, audioCtx) {
   });
 }
 
-async function applyAudioEffects(raw_filepath, i) {
+async function applyAudioEffects(raw_filepath, i, params) {
   const audioCtx = new RenderingAudioContext();
   console.log("aca en apply audio effects");
   // Effects
@@ -247,7 +255,38 @@ async function applyAudioEffects(raw_filepath, i) {
   const waveloss = effectWaveloss(audioCtx, 400);
   const glitch = effectGlitch(audioCtx, 8);
 
-  await playVoice(audioCtx, raw_filepath, 0, [glitch]);
+  const effects = [];
+  const { sentiment } = params;
+
+  if (sentiment <= -0.75) {
+      effects.push(glitch);
+  }
+
+  if (sentiment <= -0.5) {
+      effects.push(distort);
+  }
+
+  if (sentiment < 0) {
+      effects.push(waveloss);
+  }
+
+  if (sentiment === 0) {
+      effects.push(lpf);
+  }
+
+  if (sentiment > 0) {
+      effects.push(compressor);
+  }
+
+  if (sentiment >= 0.5) {
+      effects.push(biquad);
+  }
+
+  if (sentiment >= 0.75) {
+      effects.push(lpf);
+  }
+
+  await playVoice(audioCtx, raw_filepath, 0, effects);
   console.log("despues de playvoice");
 
   audioCtx.processTo("00:00:10.000");
@@ -259,19 +298,19 @@ async function applyAudioEffects(raw_filepath, i) {
 }
 
 async function main() {
-   wa.create({
-     sessionId: "AFASIA_DE_WERNICKE",
-     multiDevice: true, // required to enable multiDevice support
-     authTimeout: 60, // wait only 60 seconds to get a connection with the host account device
-     blockCrashLogs: true,
-     disableSpins: true,
-     headless: true,
-     hostNotificationLang: "ES_AR",
-     logConsole: true,
-     popup: true,
-     useChrome: true,
-     qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
-   }).then((client) => start(client));
+  wa.create({
+    sessionId: "AFASIA_DE_WERNICKE",
+    multiDevice: true, // required to enable multiDevice support
+    authTimeout: 60, // wait only 60 seconds to get a connection with the host account device
+    blockCrashLogs: true,
+    disableSpins: true,
+    headless: true,
+    hostNotificationLang: "ES_AR",
+    logConsole: true,
+    popup: true,
+    useChrome: true,
+    qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
+  }).then((client) => start(client));
 }
 
 main();
