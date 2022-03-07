@@ -34,31 +34,50 @@ async function fonar(text, i, client, destination) {
   return filepathWAV;
 }
 
+async function combineSentences(sentence1, sentence2){
+  let content1 = sentence1.split(' ');
+  let content2 = sentence2.split(' ');
+  let res = "";
+  for (let a = 0; a<content1.length; a++) {
+      res += content1[a] + content2[a] + " ";
+  }
+  return res;
+}
+
+
 async function start(client) {
   let i = 0;
   client.onMessage(async (message) => {
     i += 1;
-    console.log(message.body);
     try {
-      const rawFilepath = await fonar(message.body, i, client, message.from);
-      const params = await analizeText(message.body);
-      console.log(params);
-      console.log(">>>>>>>>>>>>>>>>>>");
-      const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
-      console.log(
-        "Despues de apply audioeffects. nos dio el filepath ",
-        resultFilepath
-      );
-      var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
-      //ffmpeg(resultFilepath).toFormat('mp3').save(finalAudioPath);
-      await exec(toMP3(resultFilepath, finalAudioPath));
-      console.log(
-        "despues de llamar a ffmpeg con el filepath ",
-        resultFilepath
-      );
-      await delay(4000);
-      await client.sendText(message.from, "🗣️");
-      await client.sendAudio(message.from, finalAudioPath);
+      console.log(message.body);
+      if (message.type === "ptt" || message.type === "document" || message.type === "location") {
+        let afasiaText = "Afasia ( ἀφασία ) se trata de la pérdida de capacidad de producir o comprender el lenguaje, debido a lesiones en áreas cerebrales especializadas en estas funciones. Es entonces una pérdida adquirida en el lenguaje oral."
+        let krakkedText = afasiaText.split('').sort(function(){return 0.5-Math.random()}).join('');
+        let shuffled = await combineSentences(afasiaText, krakkedText);
+        await client.sendText(message.from, shuffled);
+      } else {
+
+        const rawFilepath = await fonar(message.body, i, client, message.from);
+        const params = await analizeText(message.body);
+        console.log(params);
+        console.log(">>>>>>>>>>>>>>>>>>");
+        const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
+        console.log(
+          "Despues de apply audioeffects. nos dio el filepath ",
+          resultFilepath
+        );
+        var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
+        //ffmpeg(resultFilepath).toFormat('mp3').save(finalAudioPath);
+        await exec(toMP3(resultFilepath, finalAudioPath));
+        console.log(
+          "despues de llamar a ffmpeg con el filepath ",
+          resultFilepath
+        );
+        await delay(4000);
+        await client.sendText(message.from, "🗣️");
+        await client.sendAudio(message.from, finalAudioPath);
+      }
     } catch (e) {
       console.log(e);
       await client.sendText(message.from, "gracias. casi hacés caer al server");
