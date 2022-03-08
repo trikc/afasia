@@ -51,7 +51,11 @@ async function start(client) {
     i += 1;
     try {
       console.log(message.body);
-      if (message.type === "ptt" || message.type === "document" || message.type === "location") {
+      console.log(message.isGroupMsg);
+      if (message.isGroupMsg) {
+          return;
+      }
+      else if (message.type === "ptt" || message.type === "document" || message.type === "location") {
         let afasiaText = "Afasia ( ἀφασία ) se trata de la pérdida de capacidad de producir o comprender el lenguaje, debido a lesiones en áreas cerebrales especializadas en estas funciones. Es entonces una pérdida adquirida en el lenguaje oral."
         let krakkedText = afasiaText.split('').sort(function(){return 0.5-Math.random()}).join('');
         let shuffled = await combineSentences(afasiaText, krakkedText);
@@ -60,6 +64,7 @@ async function start(client) {
 
         const rawFilepath = await fonar(message.body, i, client, message.from);
         const params = await analizeText(message.body);
+        await client.sendText(message.from, JSON.stringify(params));
         console.log(params);
         console.log(">>>>>>>>>>>>>>>>>>");
         const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
