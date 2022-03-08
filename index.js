@@ -50,8 +50,9 @@ async function start(client) {
   client.onMessage(async (message) => {
     i += 1;
     try {
-      console.log(message.body);
-      console.log(message.isGroupMsg);
+      console.log("🗣️ ", message.body);
+      console.log("> is group:" ,message.isGroupMsg);
+      console.log("> type: ", message.type);
       if (message.isGroupMsg) {
           return;
       }
@@ -59,8 +60,13 @@ async function start(client) {
         let afasiaText = "Afasia ( ἀφασία ) se trata de la pérdida de capacidad de producir o comprender el lenguaje, debido a lesiones en áreas cerebrales especializadas en estas funciones. Es entonces una pérdida adquirida en el lenguaje oral."
         let krakkedText = afasiaText.split('').sort(function(){return 0.5-Math.random()}).join('');
         let shuffled = await combineSentences(afasiaText, krakkedText);
+        console.log(shuffled);
         await client.sendText(message.from, shuffled);
-      } else {
+      } else if (message.type === 'image') {
+        console.log(message.sender.name, " mandó una imagen");
+        await client.sendText(message.from, message.sender.name);
+        await client.sendImage(message.from,message.sender.profilePicThumbObj.eurl);
+      } else { 
 
         const rawFilepath = await fonar(message.body, i, client, message.from);
         const params = await analizeText(message.body);
@@ -68,24 +74,24 @@ async function start(client) {
         console.log(params);
         console.log(">>>>>>>>>>>>>>>>>>");
         const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
-        console.log(
-          "Despues de apply audioeffects. nos dio el filepath ",
-          resultFilepath
-        );
+        //console.log(
+        //  "Despues de apply audioeffects. nos dio el filepath ",
+        //  resultFilepath
+        //);
         var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
         //ffmpeg(resultFilepath).toFormat('mp3').save(finalAudioPath);
         await exec(toMP3(resultFilepath, finalAudioPath));
-        console.log(
-          "despues de llamar a ffmpeg con el filepath ",
-          resultFilepath
-        );
+        //console.log(
+        //  "despues de llamar a ffmpeg con el filepath ",
+        //  resultFilepath
+        //);
         await delay(4000);
         await client.sendText(message.from, "🗣️");
         await client.sendAudio(message.from, finalAudioPath);
       }
     } catch (e) {
       console.log(e);
-      await client.sendText(message.from, "gracias. casi hacés caer al server");
+      await client.sendText(message.from, "error. casi hacés caer al server");
     }
   });
 }
