@@ -23,15 +23,15 @@ async function fonar(text, i) {
   var filepathMP3 = path.join(__dirname, "raw_" + i.toString() + ".mp3");
   var filepathWAV = path.join(__dirname, "raw_" + i.toString() + ".wav");
 
-  gtts.save(filepathMP3, text, function () {
-    console.log("save done ", i);
-  });
+  console.log("definidos los paths");
+
+  gtts.save(filepathMP3, text, () => {});
+  console.log("guardando el mensaje");
 
   await delay(2000);
-  await exec(toWAV(filepathMP3,filepathWAV));
-  console.log("pasado a wav");
-  //await fs.unlink(filepathMP3);
-  //await client.sendAudio(destination, filepath);
+  await exec(toWAV(filepathMP3, filepathWAV));
+  console.log("guardado como wav");
+
   return filepathWAV;
 }
 
@@ -345,10 +345,11 @@ async function main() {
     disableSpins: true,
     headless: true,
     hostNotificationLang: "ES_AR",
-    logConsole: true,
+    logConsole: false,
     popup: true,
     useChrome: true,
     qrTimeout: 0, // 0 means it will wait forever for you to scan the qr code
+    logging: [{ type: "file" }],
   }).then((client) => start(client));
 }
 
