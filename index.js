@@ -35,12 +35,12 @@ async function fonar(text, i) {
   return filepathWAV;
 }
 
-async function combineSentences(sentence1, sentence2){
-  let content1 = sentence1.split(' ');
-  let content2 = sentence2.split(' ');
+async function combineSentences(sentence1, sentence2) {
+  let content1 = sentence1.split(" ");
+  let content2 = sentence2.split(" ");
   let res = "";
-  for (let a = 0; a<content1.length; a++) {
-      res += content1[a] + content2[a] + " ";
+  for (let a = 0; a < content1.length; a++) {
+    res += content1[a] + content2[a] + " ";
   }
   return res;
 }
@@ -70,36 +70,40 @@ async function start(client) {
     i += 1;
     try {
       if (message.isGroupMsg) {
-          return;
+        return;
       }
-      else if (message.type === "ptt" || message.type === "document" || message.type === "location") {
-        let afasiaText = "Afasia ( ἀφασία ) se trata de la pérdida de capacidad de producir o comprender el lenguaje, debido a lesiones en áreas cerebrales especializadas en estas funciones. Es entonces una pérdida adquirida en el lenguaje oral."
-        let krakkedText = afasiaText.split('').sort(function(){return 0.5-Math.random()}).join('');
+
+      if (
+        message.type === "ptt" ||
+        message.type === "document" ||
+        message.type === "location"
+      ) {
+        let afasiaText =
+          "Afasia ( ἀφασία ) se trata de la pérdida de capacidad de producir o comprender el lenguaje, debido a lesiones en áreas cerebrales especializadas en estas funciones. Es entonces una pérdida adquirida en el lenguaje oral.";
+        let krakkedText = afasiaText
+          .split("")
+          .sort(function () {
+            return 0.5 - Math.random();
+          })
+          .join("");
         let shuffled = await combineSentences(afasiaText, krakkedText);
         await client.sendText(message.from, shuffled);
-      } else {
 
-        const rawFilepath = await fonar(message.body, i, client, message.from);
-        const params = await analizeText(message.body);
-        await client.sendText(message.from, JSON.stringify(params));
-        console.log(params);
-        console.log(">>>>>>>>>>>>>>>>>>");
-        const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
-        console.log(
-          "Despues de apply audioeffects. nos dio el filepath ",
-          resultFilepath
-        );
-        var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
-        //ffmpeg(resultFilepath).toFormat('mp3').save(finalAudioPath);
-        await exec(toMP3(resultFilepath, finalAudioPath));
-        console.log(
-          "despues de llamar a ffmpeg con el filepath ",
-          resultFilepath
-        );
-        await delay(4000);
-        await client.sendText(message.from, "🗣️");
-        await client.sendAudio(message.from, finalAudioPath);
+        return;
       }
+
+      const rawFilepath = await fonar(message.body, i);
+      const params = await analizeText(message.body);
+
+      logMessage(message.body, params.sentiment);
+
+      const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
+      var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
+
+      await exec(toMP3(resultFilepath, finalAudioPath));
+      // await delay(4000);
+      await client.sendText(message.from, "🗣️");
+      await client.sendAudio(message.from, finalAudioPath);
     } catch (e) {
       console.error(e);
       await client.sendText(
@@ -296,31 +300,31 @@ async function applyAudioEffects(raw_filepath, i, params) {
   const { sentiment } = params;
 
   if (sentiment <= -0.75) {
-      effects.push(glitch);
+    effects.push(glitch);
   }
 
   if (sentiment <= -0.5) {
-      effects.push(distort);
+    effects.push(distort);
   }
 
   if (sentiment < 0) {
-      effects.push(waveloss);
+    effects.push(waveloss);
   }
 
   if (sentiment === 0) {
-      effects.push(lpf);
+    effects.push(lpf);
   }
 
   if (sentiment > 0) {
-      effects.push(compressor);
+    effects.push(compressor);
   }
 
   if (sentiment >= 0.5) {
-      effects.push(biquad);
+    effects.push(biquad);
   }
 
   if (sentiment >= 0.75) {
-      effects.push(lpf);
+    effects.push(lpf);
   }
 
   await playVoice(audioCtx, raw_filepath, 0, effects);
