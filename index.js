@@ -23,14 +23,10 @@ async function fonar(text, i) {
   var filepathMP3 = path.join(__dirname, "raw_" + i.toString() + ".mp3");
   var filepathWAV = path.join(__dirname, "raw_" + i.toString() + ".wav");
 
-  console.log("definidos los paths");
-
   gtts.save(filepathMP3, text, () => {});
-  console.log("guardando el mensaje");
 
   await delay(2000);
   await exec(toWAV(filepathMP3, filepathWAV));
-  console.log("guardado como wav");
 
   return filepathWAV;
 }
