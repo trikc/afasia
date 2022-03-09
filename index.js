@@ -87,7 +87,6 @@ async function start(client) {
           })
           .join("");
         let shuffled = await combineSentences(afasiaText, krakkedText);
-        console.log(shuffled);
         await client.sendText(message.from, shuffled);
         return;
       }
