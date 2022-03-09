@@ -6,6 +6,8 @@ const util = require("util");
 const gtts = require("node-gtts")("es");
 const path = require("path");
 const exec = util.promisify(require("child_process").exec);
+const luni = require("lunicode");
+const chalk = require("chalk");
 
 const { Container } = require("@nlpjs/core");
 const { SentimentAnalyzer } = require("@nlpjs/sentiment");
@@ -44,8 +46,26 @@ async function combineSentences(sentence1, sentence2){
   return res;
 }
 
+function logMessage(msg, sentiment) {
+  if (sentiment < -0.5) {
+    console.log(chalk.red(">"), luni.tools.creepify.encode(msg));
+  }
+
+  if (sentiment >= -0.5 && sentiment < 0) {
+    console.log(chalk.orange(">"), luni.tools.bent.encode(msg));
+  }
+
+  if (sentiment === 0) {
+    console.log(chalk.yellow(">"), msg);
+  }
+
+  if (sentiment > 0) {
+    console.log(chalk.green(">"), luni.tools.tiny.encode(msg));
+  }
+}
 
 async function start(client) {
+  console.clear();
   let i = 0;
   client.onMessage(async (message) => {
     i += 1;
@@ -84,8 +104,11 @@ async function start(client) {
         await client.sendAudio(message.from, finalAudioPath);
       }
     } catch (e) {
-      console.log(e);
-      await client.sendText(message.from, "gracias. casi hacés caer al server");
+      console.error(e);
+      await client.sendText(
+        message.from,
+        luni.tools.creepify.encode("me has dejado sin palabras")
+      );
     }
   });
 }
