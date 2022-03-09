@@ -19,7 +19,7 @@ const toMP3 = (filepathWAV, filepathMP3) =>
 const toWAV = (filepathMP3, filepathWAV) =>
   "ffmpeg -i " + filepathMP3 + " " + filepathWAV;
 
-async function fonar(text, i, client, destination) {
+async function fonar(text, i) {
   var filepathMP3 = path.join(__dirname, "raw_" + i.toString() + ".mp3");
   var filepathWAV = path.join(__dirname, "raw_" + i.toString() + ".wav");
 
@@ -27,7 +27,6 @@ async function fonar(text, i, client, destination) {
     console.log("save done ", i);
   });
 
-  //ffmpeg(filepathMP3).toFormat('wav').on('error', (err) => {console.log('An error occurred: ' + err.message);}).save(filepathWAV);
   await delay(2000);
   await exec(toWAV(filepathMP3,filepathWAV));
   console.log("pasado a wav");
@@ -70,8 +69,6 @@ async function start(client) {
   client.onMessage(async (message) => {
     i += 1;
     try {
-      console.log(message.body);
-      console.log(message.isGroupMsg);
       if (message.isGroupMsg) {
           return;
       }
@@ -121,11 +118,8 @@ async function analizeText(text) {
   let length = text.length;
   const container = new Container();
   container.use(LangEs);
-  console.log("container use", container);
   const sentiment = new SentimentAnalyzer({ container });
-  console.log("despues de sentiment ", sentiment);
   const result = await sentiment.process({ locale: "es", text: text });
-  console.log("result ", result);
   let res = {
     length: length,
     sentiment: result.sentiment.score,
@@ -133,12 +127,10 @@ async function analizeText(text) {
     sent_words: result.sentiment.numHits,
     sent_average: result.sentiment.average,
   };
-  console.log(res);
   return res;
 }
 
 async function playVoice(audioCtx, filename, delay, effects) {
-  console.log("dentro de playvoice. se le dio el filename ,", filename);
   const audioBuffer = await loadSample(audioCtx, filename);
   let bufferSource = audioCtx.createBufferSource();
   bufferSource.buffer = audioBuffer;
@@ -149,11 +141,9 @@ async function playVoice(audioCtx, filename, delay, effects) {
 
   for (const effect of effects) {
     currentNode.connect(effect);
-    console.log("connected", currentNode, "to", effect);
     currentNode = effect;
   }
 
-  console.log("connected", currentNode, "to", finalNode);
   currentNode.connect(finalNode);
 
   bufferSource.start(audioCtx.currentTime + delay);
@@ -293,7 +283,7 @@ async function saveToFile(filename, audioCtx) {
 
 async function applyAudioEffects(raw_filepath, i, params) {
   const audioCtx = new RenderingAudioContext();
-  console.log("aca en apply audio effects");
+
   // Effects
   const distort = effectDistort(audioCtx, 9000);
   const lpf = effectLPF(audioCtx);
@@ -334,13 +324,11 @@ async function applyAudioEffects(raw_filepath, i, params) {
   }
 
   await playVoice(audioCtx, raw_filepath, 0, effects);
-  console.log("despues de playvoice");
 
   audioCtx.processTo("00:00:10.000");
 
   var filepath = path.join(__dirname, "out_" + i.toString() + ".wav");
   await saveToFile(filepath, audioCtx);
-  console.log("despues de guardar");
   return filepath;
 }
 
