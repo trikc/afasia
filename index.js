@@ -47,11 +47,11 @@ function logMessage(msg, sentiment) {
   }
 
   if (sentiment >= -0.5 && sentiment < 0) {
-    console.log(chalk.orange(">"), luni.tools.bent.encode(msg));
+    console.log(chalk.yellow(">"), luni.tools.bent.encode(msg));
   }
 
   if (sentiment === 0) {
-    console.log(chalk.yellow(">"), msg);
+    console.log(chalk.white(">"), msg);
   }
 
   if (sentiment > 0) {
