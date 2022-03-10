@@ -41,24 +41,6 @@ async function combineSentences(sentence1, sentence2) {
   return res;
 }
 
-function logMessage(msg, sentiment) {
-  if (sentiment < -0.5) {
-    console.log(chalk.red(">"), luni.tools.creepify.encode(msg));
-  }
-
-  if (sentiment >= -0.5 && sentiment < 0) {
-    console.log(chalk.yellow(">"), luni.tools.bent.encode(msg));
-  }
-
-  if (sentiment === 0) {
-    console.log(chalk.white(">"), msg);
-  }
-
-  if (sentiment > 0) {
-    console.log(chalk.green(">"), luni.tools.tiny.encode(msg));
-  }
-}
-
 async function start(client) {
   console.clear();
   let i = 0;
@@ -68,6 +50,14 @@ async function start(client) {
       if (message.isGroupMsg) {
         return;
       }
+
+      console.log({
+        estado: "MENSAJE RECIBIDO",
+        hora: message.timestamp,
+        remitente: message.from,
+        nombre: message.sender.name,
+        mensaje: message.body,
+      });
 
       if (
         message.type === "ptt" ||
@@ -82,35 +72,51 @@ async function start(client) {
             return 0.5 - Math.random();
           })
           .join("");
+
+        console.log({ estado: "PROCESANDO" });
         let shuffled = await combineSentences(afasiaText, krakkedText);
         await client.sendText(message.from, shuffled);
+
+        console.log({ estado: "RESPUESTA ENVIADA" });
+
         return;
       }
 
       if (message.type === "image") {
+        console.log({ estado: "PROCESANDO" });
         await client.sendText(message.from, message.sender.name);
         await client.sendImage(
           message.from,
           message.sender.profilePicThumbObj.eurl
         );
 
+        console.log({ estado: "RESPUESTA ENVIADA" });
+
         return;
       }
 
+      console.log({ estado: "FONANDO" });
       const rawFilepath = await fonar(message.body, i);
+
+      console.log({ estado: "ANALIZANDO" });
       const params = await analizeText(message.body);
+      console.log({
+        estado: "ANALISIS COMPLETO",
+        params,
+      });
 
-      logMessage(message.body, params.sentiment);
-
+      console.log({ estado: "PROCESANDO" });
       const resultFilepath = await applyAudioEffects(rawFilepath, i, params);
       var finalAudioPath = path.join(__dirname, "out_" + i.toString() + ".mp3");
 
       await exec(toMP3(resultFilepath, finalAudioPath));
-      // await delay(4000);
+
+      await client.sendText(message.from, JSON.stringify(params));
       await client.sendText(message.from, "🗣️");
       await client.sendAudio(message.from, finalAudioPath);
+      console.log({ estado: "RESPUESTA ENVIADA" });
     } catch (e) {
-      console.error(e);
+      console.error({ estado: "ERROR", error: e });
       await client.sendText(
         message.from,
         luni.tools.creepify.encode("me has dejado sin palabras")
