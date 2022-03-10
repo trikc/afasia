@@ -44,6 +44,9 @@ async function combineSentences(sentence1, sentence2) {
 async function start(client) {
   console.clear();
   let i = 0;
+
+  client.onIncomingCall(async () => {});
+
   client.onMessage(async (message) => {
     i += 1;
     try {
@@ -82,7 +85,7 @@ async function start(client) {
         return;
       }
 
-      if (message.type === "image") {
+      if (message.type === "image" || message.type === "sticker") {
         console.log({ estado: "PROCESANDO" });
         await client.sendText(message.from, message.sender.name);
         await client.sendImage(
