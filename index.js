@@ -45,14 +45,15 @@ async function start(client) {
   console.clear();
   let i = 0;
 
-  client.onIncomingCall(async () => {});
-
   client.onMessage(async (message) => {
     i += 1;
+
     try {
       if (message.isGroupMsg) {
         return;
       }
+
+      await client.simulateTyping(message.from, true);
 
       console.log({
         estado: "MENSAJE RECIBIDO",
@@ -124,6 +125,8 @@ async function start(client) {
         message.from,
         luni.tools.creepify.encode("me has dejado sin palabras")
       );
+    } finally {
+      await client.simulateTyping(message.from, false);
     }
   });
 }
